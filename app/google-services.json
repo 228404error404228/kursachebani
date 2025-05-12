@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "688855068693",
+    "project_id": "kurs-f9f87",
+    "storage_bucket": "kurs-f9f87.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688855068693:android:02426879a790011e041e1c",
+        "android_client_info": {
+          "package_name": "com.example.kurs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJcg5j-Cib5vEHH-c_N3rpDZwwNdXnv3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
