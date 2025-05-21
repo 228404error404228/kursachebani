@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/form_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Address 1 (с автозаполнением) -->
+        <EditText
+            android:id="@+id/autocomplete_address1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Address Line 1"
+            android:focusable="false"
+            android:inputType="none" />
+
+        <!-- Address 2 -->
+        <EditText
+            android:id="@+id/autocomplete_address2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Address Line 2" />
+
+        <!-- Город -->
+        <EditText
+            android:id="@+id/autocomplete_city"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="City" />
+
+        <!-- Штат -->
+        <EditText
+            android:id="@+id/autocomplete_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="State" />
+
+        <!-- Почтовый индекс -->
+        <EditText
+            android:id="@+id/autocomplete_postal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Postal Code" />
+
+        <!-- Страна -->
+        <EditText
+            android:id="@+id/autocomplete_country"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Country" />
+
+        <!-- Чекбокс -->
+        <CheckBox
+            android:id="@+id/checkbox_proximity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Check if address is near your current location" />
+
+        <!-- Кнопки -->
+        <Button
+            android:id="@+id/autocomplete_save_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save" />
+
+        <Button
+            android:id="@+id/autocomplete_reset_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reset" />
+
+        <!-- Заготовка под карту -->
+        <ViewStub
+            android:id="@+id/stub_map"
+            android:layout="@layout/autocomplete_map_container"
+            android:layout_width="match_parent"
+            android:layout_height="300dp" />
+
+        <EditText
+            android:id="@+id/addressSearchField"
+            android:hint="Начните вводить адрес"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPostalAddress"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:padding="8dp"
+            android:background="@android:drawable/editbox_background" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/autocomplete_suggestions"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:visibility="gone" />
+
+
+    </LinearLayout>
+</ScrollView>

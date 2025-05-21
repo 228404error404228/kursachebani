@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.constraintlayout)
 
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
@@ -72,8 +73,29 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
-    implementation("com.google.android.material:material:1.10.0")
+    // Firebase BoM (управление версиями)
+    implementation (platform("com.google.firebase:firebase-bom:32.8.0"))
+
+// Firebase Auth (без явного указания версии)
+    implementation ("com.google.firebase:firebase-auth")
+
+// Google Sign-In (указать одну версию)
+    implementation ("com.google.android.gms:play-services-auth:21.0.0")
+
+// Material Design
+    implementation ("com.google.android.material:material:1.10.0")
+
+// Navigation (если используешь Navigation Component)
+    implementation ("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation ("androidx.navigation:navigation-ui-ktx:2.7.7")
+    implementation("com.google.firebase:firebase-database")
+
+    implementation ("com.google.android.libraries.places:places:3.3.0")
+    implementation ("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
+    implementation ("com.google.android.libraries.places:places:3.4.0")
+
+
+
 
 }

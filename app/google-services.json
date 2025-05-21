@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "688855068693",
+    "firebase_url": "https://kurs-f9f87-default-rtdb.firebaseio.com",
     "project_id": "kurs-f9f87",
     "storage_bucket": "kurs-f9f87.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.kurs"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "688855068693-jijupbrmoa36q0389vjihaf0q23cq3fp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kurs",
+            "certificate_hash": "eb1271e793ea54d720f44a4b9e9991a20d016575"
+          }
+        },
+        {
+          "client_id": "688855068693-nlrcasvuprc0v516j8ls01ejih712ta4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCJcg5j-Cib5vEHH-c_N3rpDZwwNdXnv3E"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "688855068693-nlrcasvuprc0v516j8ls01ejih712ta4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
