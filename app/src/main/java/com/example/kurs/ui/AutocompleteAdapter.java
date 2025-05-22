@@ -17,11 +17,11 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import com.google.android.gms.maps.model.LatLng;
 public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapter.ViewHolder> {
 
     public interface OnPlaceClickListener {
-        void onPlaceClick(String address);
+        void onPlaceClick(String address, LatLng latLng);
     }
 
     private final Context context;
@@ -58,8 +58,21 @@ public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapte
     @Override
     public void onBindViewHolder(@NonNull AutocompleteAdapter.ViewHolder holder, int position) {
         AutocompletePrediction prediction = predictions.get(position);
-        holder.predictionText.setText(prediction.getFullText(null).toString());
-        holder.itemView.setOnClickListener(v -> listener.onPlaceClick(prediction.getFullText(null).toString()));
+        holder.itemView.setOnClickListener(v -> {
+            String placeId = prediction.getPlaceId();
+            placesClient.fetchPlace(
+                    com.google.android.libraries.places.api.net.FetchPlaceRequest.builder(
+                            placeId,
+                            List.of(com.google.android.libraries.places.api.model.Place.Field.LAT_LNG, com.google.android.libraries.places.api.model.Place.Field.NAME)
+                    ).build()
+            ).addOnSuccessListener(fetchPlaceResponse -> {
+                com.google.android.libraries.places.api.model.Place place = fetchPlaceResponse.getPlace();
+                LatLng latLng = place.getLatLng();
+                if (latLng != null) {
+                    listener.onPlaceClick(place.getName(), latLng);
+                }
+            });
+        });
     }
 
     @Override

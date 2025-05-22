@@ -15,16 +15,16 @@
         android:id="@+id/map_fragment"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="720dp" />
 
     <EditText
         android:id="@+id/addressSearchField"
-        android:layout_width="match_parent"
+        android:layout_width="366dp"
         android:layout_height="wrap_content"
-        android:hint="Введите адрес"
-        android:inputType="text"
         android:drawableStart="@android:drawable/ic_menu_search"
-        android:drawablePadding="8dp"/>
+        android:drawablePadding="8dp"
+        android:hint="Введите адрес"
+        android:inputType="text" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/autocompleteSuggestions"

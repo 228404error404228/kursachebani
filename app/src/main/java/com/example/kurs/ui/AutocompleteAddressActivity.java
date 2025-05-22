@@ -36,8 +36,8 @@ public class AutocompleteAddressActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.autocomplete_suggestions);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new AutocompleteAdapter(this, placesClient, place -> {
-            fillAddressFields(place);
+        adapter = new AutocompleteAdapter(this, placesClient, (address, latLng) -> {
+            fillAddressFields(address); // если LatLng пока не нужен — просто игнорируй
         });
         recyclerView.setAdapter(adapter);
 

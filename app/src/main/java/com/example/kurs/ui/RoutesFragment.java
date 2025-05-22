@@ -37,6 +37,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.gms.maps.model.LatLng;
+
 
 public class RoutesFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -45,6 +54,9 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
     private List<Attraction> attractionsList = new ArrayList<>();
     private Map<Marker, Attraction> markersMap = new HashMap<>();
     private Polyline currentRoute;
+    private EditText addressSearchField;
+    private RecyclerView suggestionsRecycler;
+    private AutocompleteAdapter autocompleteAdapter;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private boolean locationPermissionGranted = false;
@@ -52,6 +64,7 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final LatLng DEFAULT_LOCATION = new LatLng(55.751244, 37.618423); // Москва
     private static final float DEFAULT_ZOOM = 15f;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -71,6 +84,40 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+        // Инициализация UI поиска
+        addressSearchField = view.findViewById(R.id.addressSearchField);
+        suggestionsRecycler = view.findViewById(R.id.autocompleteSuggestions);
+        suggestionsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
+
+// Инициализация Places API
+        if (!Places.isInitialized()) {
+            Places.initialize(requireContext().getApplicationContext(), "YOUR_API_KEY_HERE"); // <-- вставь сюда свой ключ
+        }
+        PlacesClient placesClient = Places.createClient(requireContext());
+
+        autocompleteAdapter = new AutocompleteAdapter(requireContext(), placesClient, (address, latLng) -> {
+            addressSearchField.setText(address);
+            suggestionsRecycler.setVisibility(View.GONE);
+
+            if (mMap != null) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
+            }
+        });
+
+        suggestionsRecycler.setAdapter(autocompleteAdapter);
+
+        addressSearchField.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (!s.toString().isEmpty()) {
+                    suggestionsRecycler.setVisibility(View.VISIBLE);
+                    autocompleteAdapter.getSuggestions(s.toString());
+                } else {
+                    suggestionsRecycler.setVisibility(View.GONE);
+                }
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
 
         // Запрос разрешения на геолокацию
         getLocationPermission();
