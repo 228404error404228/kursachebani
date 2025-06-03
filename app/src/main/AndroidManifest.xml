@@ -3,14 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.kurs">
 
-
-    <!-- Разрешения для работы с интернетом, картами и местоположением -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Разрешения -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Для Android 10+ требуется это разрешение для доступа к местоположению в фоне -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
@@ -24,7 +23,7 @@
         android:theme="@style/Theme.Kurs"
         tools:targetApi="31">
 
-        <!-- Активность для работы с картой -->
+        <!-- Активность с картой -->
         <activity
             android:name=".MapActivity"
             android:exported="false"
@@ -34,7 +33,7 @@
                 android:value="" />
         </activity>
 
-        <!-- Главная активность (замените на вашу) -->
+        <!-- Главная активность -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -43,22 +42,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Метаданные для API Google Maps -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
-
-        <!-- Метаданные для Firebase -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="@string/default_notification_channel_id" />
-        <meta-data
-            android:name="firebase_crashlytics_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="com.google.android.geo.AIzaSyCHqNhuw8PGGOfkSDcqYCDhLHIKMESYWD0"
-            android:value="AIzaSyCHqNhuw8PGGOfkSDcqYCDhLHIKMESYWD0" />
 
     </application>
 

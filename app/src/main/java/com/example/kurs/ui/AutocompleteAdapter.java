@@ -1,6 +1,7 @@
 package com.example.kurs.ui;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,42 +11,63 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.kurs.R;
-import com.google.android.libraries.places.api.model.AutocompletePrediction;
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse;
-import com.google.android.libraries.places.api.net.PlacesClient;
+import com.example.kurs.network.NominatimApi;
+import com.example.kurs.network.NominatimPlace;
+
+import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.google.android.gms.maps.model.LatLng;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapter.ViewHolder> {
 
     public interface OnPlaceClickListener {
-        void onPlaceClick(String address, LatLng latLng);
+        void onPlaceClick(String address, GeoPoint geoPoint);
     }
 
     private final Context context;
-    private final PlacesClient placesClient;
+    private final NominatimApi api;
     private final OnPlaceClickListener listener;
-    private final List<AutocompletePrediction> predictions = new ArrayList<>();
+    private final List<NominatimPlace> predictions = new ArrayList<>();
 
-    public AutocompleteAdapter(Context context, PlacesClient placesClient, OnPlaceClickListener listener) {
+    public AutocompleteAdapter(Context context, NominatimApi api, OnPlaceClickListener listener) {
         this.context = context;
-        this.placesClient = placesClient;
+        this.api = api;
         this.listener = listener;
     }
 
     public void getSuggestions(String query) {
-        FindAutocompletePredictionsRequest request = FindAutocompletePredictionsRequest.builder()
-                .setQuery(query)
-                .build();
+        Call<List<NominatimPlace>> call = api.searchPlaces(
+                query,
+                "json",
+                1,
+                5,
+                1,
+                0,
+                0,
+                "egor.edrenov@gmail.com.com", // укажи актуальный email
+                "5b3ce3597851110001cf624884b1ded505a84033aad7ea2edb718b95"       // замени на твой ключ
+        );
 
-        placesClient.findAutocompletePredictions(request)
-                .addOnSuccessListener((FindAutocompletePredictionsResponse response) -> {
+        call.enqueue(new Callback<List<NominatimPlace>>() {
+            @Override
+            public void onResponse(Call<List<NominatimPlace>> call, Response<List<NominatimPlace>> response) {
+                if (response.isSuccessful() && response.body() != null) {
                     predictions.clear();
-                    predictions.addAll(response.getAutocompletePredictions());
+                    predictions.addAll(response.body());
                     notifyDataSetChanged();
-                });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<NominatimPlace>> call, Throwable t) {
+                Log.e("Nominatim", "Ошибка получения предсказаний", t);
+            }
+        });
     }
 
     @NonNull
@@ -57,21 +79,11 @@ public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapte
 
     @Override
     public void onBindViewHolder(@NonNull AutocompleteAdapter.ViewHolder holder, int position) {
-        AutocompletePrediction prediction = predictions.get(position);
+        NominatimPlace place = predictions.get(position);
+        holder.predictionText.setText(place.display_name);
         holder.itemView.setOnClickListener(v -> {
-            String placeId = prediction.getPlaceId();
-            placesClient.fetchPlace(
-                    com.google.android.libraries.places.api.net.FetchPlaceRequest.builder(
-                            placeId,
-                            List.of(com.google.android.libraries.places.api.model.Place.Field.LAT_LNG, com.google.android.libraries.places.api.model.Place.Field.NAME)
-                    ).build()
-            ).addOnSuccessListener(fetchPlaceResponse -> {
-                com.google.android.libraries.places.api.model.Place place = fetchPlaceResponse.getPlace();
-                LatLng latLng = place.getLatLng();
-                if (latLng != null) {
-                    listener.onPlaceClick(place.getName(), latLng);
-                }
-            });
+            GeoPoint geoPoint = new GeoPoint(Double.parseDouble(place.lat), Double.parseDouble(place.lon));
+            listener.onPlaceClick(place.display_name, geoPoint);
         });
     }
 

@@ -52,50 +52,40 @@ android {
 
 
 dependencies {
-    // AndroidX
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.constraintlayout)
-
-
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.database)
-
-    // Google Maps
-    implementation(libs.play.services.maps)
-    implementation(libs.play.services.location)
-    implementation(libs.navigation.fragment.ktx)
-    implementation(libs.navigation.ui.ktx)
-
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-
-    // Firebase BoM (управление версиями)
-    implementation (platform("com.google.firebase:firebase-bom:32.8.0"))
-
-// Firebase Auth (без явного указания версии)
-    implementation ("com.google.firebase:firebase-auth")
-
-// Google Sign-In (указать одну версию)
-    implementation ("com.google.android.gms:play-services-auth:21.0.0")
-
-// Material Design
+    implementation ("androidx.appcompat:appcompat:1.6.1")
     implementation ("com.google.android.material:material:1.10.0")
+    implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
 
-// Navigation (если используешь Navigation Component)
-    implementation ("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation ("androidx.navigation:navigation-ui-ktx:2.7.7")
-    implementation("com.google.firebase:firebase-database")
+    // Firebase BoM
+    implementation (platform("com.google.firebase:firebase-bom:32.8.0"))
+    implementation ("com.google.firebase:firebase-auth")
+    implementation ("com.google.firebase:firebase-database")
 
-    implementation ("com.google.android.libraries.places:places:3.3.0")
+    // Google Sign-In & Maps
+    implementation ("com.google.android.gms:play-services-auth:21.0.0")
     implementation ("com.google.android.gms:play-services-maps:18.2.0")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
     implementation ("com.google.android.libraries.places:places:3.4.0")
 
+    // Navigation
+    implementation ("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation ("androidx.navigation:navigation-ui-ktx:2.7.7")
+
+    // osmdroid
+    implementation ("org.osmdroid:osmdroid-android:6.1.16")
+    implementation ("org.osmdroid:osmdroid-wms:6.1.16")
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
 
 
-
+    // Tests
+    testImplementation ("junit:junit:4.13.2")
+    androidTestImplementation ("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation ("androidx.test.espresso:espresso-core:3.5.1")
 }
+
+
+
+
+
+

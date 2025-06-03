@@ -1,31 +1,28 @@
 package com.example.kurs.ui;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.Toast;
+import com.example.kurs.R;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.kurs.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -33,119 +30,76 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.osmdroid.api.IMapController;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.widget.EditText;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.api.net.PlacesClient;
-import com.google.android.gms.maps.model.LatLng;
 
+public class RoutesFragment extends Fragment {
 
-public class RoutesFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
-
-    private GoogleMap mMap;
+    private MapView mapView;
+    private IMapController mapController;
     private DatabaseReference attractionsRef;
     private List<Attraction> attractionsList = new ArrayList<>();
-    private Map<Marker, Attraction> markersMap = new HashMap<>();
-    private Polyline currentRoute;
-    private EditText addressSearchField;
-    private RecyclerView suggestionsRecycler;
-    private AutocompleteAdapter autocompleteAdapter;
-
     private FusedLocationProviderClient fusedLocationProviderClient;
     private boolean locationPermissionGranted = false;
-    private Location lastKnownLocation;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
-    private static final LatLng DEFAULT_LOCATION = new LatLng(55.751244, 37.618423); // Москва
-    private static final float DEFAULT_ZOOM = 15f;
-
+    private static final GeoPoint DEFAULT_LOCATION = new GeoPoint(55.751244, 37.618423); // Москва
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_routes, container, false);
+
+        // Инициализация osmdroid
+        Context ctx = requireActivity().getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+
+        mapView = view.findViewById(R.id.map);
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        mapView.setMultiTouchControls(true);
+
+        mapController = mapView.getController();
+        mapController.setZoom(15.0);
+        mapController.setCenter(DEFAULT_LOCATION);
 
         // Firebase
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         attractionsRef = database.getReference("attractions");
 
-        // Инициализация FusedLocationProviderClient
+        // Геолокация
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext());
-
-        // Подключаем карту
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
-                .findFragmentById(R.id.map_fragment);
-        if (mapFragment != null) {
-            mapFragment.getMapAsync(this);
-        }
-        // Инициализация UI поиска
-        addressSearchField = view.findViewById(R.id.addressSearchField);
-        suggestionsRecycler = view.findViewById(R.id.autocompleteSuggestions);
-        suggestionsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
-
-// Инициализация Places API
-        if (!Places.isInitialized()) {
-            Places.initialize(requireContext().getApplicationContext(), "YOUR_API_KEY_HERE"); // <-- вставь сюда свой ключ
-        }
-        PlacesClient placesClient = Places.createClient(requireContext());
-
-        autocompleteAdapter = new AutocompleteAdapter(requireContext(), placesClient, (address, latLng) -> {
-            addressSearchField.setText(address);
-            suggestionsRecycler.setVisibility(View.GONE);
-
-            if (mMap != null) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
-            }
-        });
-
-        suggestionsRecycler.setAdapter(autocompleteAdapter);
-
-        addressSearchField.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (!s.toString().isEmpty()) {
-                    suggestionsRecycler.setVisibility(View.VISIBLE);
-                    autocompleteAdapter.getSuggestions(s.toString());
-                } else {
-                    suggestionsRecycler.setVisibility(View.GONE);
-                }
-            }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-
-        // Запрос разрешения на геолокацию
         getLocationPermission();
 
         return view;
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setOnMarkerClickListener(this);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.getUiSettings().setCompassEnabled(true);
-        mMap.getUiSettings().setMapToolbarEnabled(true);
-
-        updateLocationUI();
-        getDeviceLocation();
-
+    public void onResume() {
+        super.onResume();
+        mapView.onResume();
+        if (locationPermissionGranted) {
+            getDeviceLocation();
+        }
         loadAttractionsFromFirebase();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
     }
 
     private void loadAttractionsFromFirebase() {
         attractionsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mapView.getOverlays().clear();
                 attractionsList.clear();
-                markersMap.clear();
-                mMap.clear();
 
                 for (DataSnapshot item : snapshot.getChildren()) {
                     Attraction attraction = item.getValue(Attraction.class);
@@ -154,6 +108,7 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
                         addMarkerForAttraction(attraction);
                     }
                 }
+                mapView.invalidate(); // Перерисовать карту
             }
 
             @Override
@@ -164,46 +119,35 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
     }
 
     private void addMarkerForAttraction(Attraction attraction) {
-        LatLng position = new LatLng(attraction.getLatitude(), attraction.getLongitude());
-        MarkerOptions markerOptions = new MarkerOptions()
-                .position(position)
-                .title(attraction.getName())
-                .snippet(attraction.getCategory())
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-
-        Marker marker = mMap.addMarker(markerOptions);
-        markersMap.put(marker, attraction);
-    }
-
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        Attraction attraction = markersMap.get(marker);
-        if (attraction != null) {
+        Marker marker = new Marker(mapView);
+        marker.setPosition(new GeoPoint(attraction.getLatitude(), attraction.getLongitude()));
+        marker.setTitle(attraction.getName());
+        marker.setSubDescription(attraction.getCategory());
+        marker.setSnippet(attraction.getDescription());
+        marker.setOnMarkerClickListener((m, mv) -> {
             Toast.makeText(getContext(), attraction.getName() + ": " + attraction.getDescription(), Toast.LENGTH_LONG).show();
             return true;
-        }
-        return false;
+        });
+
+        mapView.getOverlays().add(marker);
     }
 
     private void getLocationPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             locationPermissionGranted = true;
-            updateLocationUI();
             getDeviceLocation();
         } else {
-            requestPermissions(
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
-            );
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
             locationPermissionGranted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            updateLocationUI();
             if (locationPermissionGranted) {
                 getDeviceLocation();
             }
@@ -216,38 +160,24 @@ public class RoutesFragment extends Fragment implements OnMapReadyCallback, Goog
                 Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
                 locationResult.addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
-                        lastKnownLocation = task.getResult();
-                        if (lastKnownLocation != null && mMap != null) {
-                            LatLng currentLatLng = new LatLng(
-                                    lastKnownLocation.getLatitude(),
-                                    lastKnownLocation.getLongitude()
-                            );
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, DEFAULT_ZOOM));
+                        Location location = task.getResult();
+                        if (location != null) {
+                            GeoPoint current = new GeoPoint(location.getLatitude(), location.getLongitude());
+                            mapController.setCenter(current);
+                            Marker currentMarker = new Marker(mapView);
+                            currentMarker.setPosition(current);
+                            currentMarker.setTitle("Вы здесь");
+                            currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                            mapView.getOverlays().add(currentMarker);
+                            mapView.invalidate();
                         }
                     } else {
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM));
-                        mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        mapController.setCenter(DEFAULT_LOCATION);
                     }
                 });
             }
         } catch (SecurityException e) {
-            Log.e("RoutesFragment", "Ошибка при получении местоположения: " + e.getMessage());
-        }
-    }
-
-    private void updateLocationUI() {
-        if (mMap == null) return;
-        try {
-            if (locationPermissionGranted) {
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(true);
-            } else {
-                mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                lastKnownLocation = null;
-            }
-        } catch (SecurityException e) {
-            Log.e("RoutesFragment", "Ошибка при обновлении UI карты: " + e.getMessage());
+            Log.e("RoutesFragment", "Ошибка получения локации: " + e.getMessage());
         }
     }
 

@@ -10,7 +10,9 @@
         android:id="@+id/addressSearchField"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Введите адрес" />
+        android:hint="Введите адрес"
+        android:imeOptions="actionSearch"
+        android:inputType="text" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/autocomplete_suggestions"

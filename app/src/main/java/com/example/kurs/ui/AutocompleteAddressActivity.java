@@ -13,12 +13,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.kurs.R;
-import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.api.net.PlacesClient;
+import com.example.kurs.network.NominatimApi;
+import com.example.kurs.ui.AutocompleteAdapter;
+
+import org.osmdroid.util.GeoPoint;
+
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class AutocompleteAddressActivity extends AppCompatActivity {
 
-    private PlacesClient placesClient;
     private AutocompleteAdapter adapter;
 
     @Override
@@ -26,18 +30,20 @@ public class AutocompleteAddressActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_autocomplete_address);
 
-        if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(), getString(R.string.google_maps_key));
-        }
+        // Настройка Nominatim API через Retrofit
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://nominatim.openstreetmap.de/") // или Heigit-URL
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
 
-        placesClient = Places.createClient(this);
+        NominatimApi nominatimApi = retrofit.create(NominatimApi.class);
 
         EditText searchField = findViewById(R.id.addressSearchField);
         RecyclerView recyclerView = findViewById(R.id.autocomplete_suggestions);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new AutocompleteAdapter(this, placesClient, (address, latLng) -> {
-            fillAddressFields(address); // если LatLng пока не нужен — просто игнорируй
+        adapter = new AutocompleteAdapter(this, nominatimApi, (address, geoPoint) -> {
+            fillAddressFields(address, geoPoint);
         });
         recyclerView.setAdapter(adapter);
 
@@ -57,7 +63,9 @@ public class AutocompleteAddressActivity extends AppCompatActivity {
         });
     }
 
-    private void fillAddressFields(String address) {
-        Toast.makeText(this, "Выбран адрес: " + address, Toast.LENGTH_SHORT).show();
+    private void fillAddressFields(String address, GeoPoint geoPoint) {
+        Toast.makeText(this, "Выбран адрес: " + address +
+                        "\nКоординаты: " + geoPoint.getLatitude() + ", " + geoPoint.getLongitude(),
+                Toast.LENGTH_SHORT).show();
     }
 }
