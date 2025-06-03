@@ -32,7 +32,7 @@ public class AutocompleteAddressActivity extends AppCompatActivity {
 
         // Настройка Nominatim API через Retrofit
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://nominatim.openstreetmap.de/") // или Heigit-URL
+                .baseUrl("https://nominatim.openstreetmap.org/") // или Heigit-URL
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 

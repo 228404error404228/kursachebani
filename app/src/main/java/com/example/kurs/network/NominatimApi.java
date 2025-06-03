@@ -13,10 +13,8 @@ public interface NominatimApi {
             @Query("format") String format,
             @Query("addressdetails") int addressDetails,
             @Query("limit") int limit,
-            @Query("namedetails") int nameDetails,
             @Query("polygon_geojson") int polygon,
             @Query("extratags") int extraTags,
-            @Query("email") String email,
-            @Query("apikey") String apiKey
+            @Query("email") String email
     );
 }

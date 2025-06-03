@@ -37,19 +37,81 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
+import retrofit2.Call;
+
+import com.example.kurs.network.NominatimApi;
+import com.example.kurs.network.NominatimPlace;
+
+import org.osmdroid.util.GeoPoint;
+
 import java.util.ArrayList;
 import java.util.List;
+
+import java.util.List;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import android.text.TextWatcher;
+import android.text.Editable;
+
 
 public class RoutesFragment extends Fragment {
 
     private MapView mapView;
     private IMapController mapController;
+    private FirebaseDatabase database;
     private DatabaseReference attractionsRef;
-    private List<Attraction> attractionsList = new ArrayList<>();
     private FusedLocationProviderClient fusedLocationProviderClient;
     private boolean locationPermissionGranted = false;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final GeoPoint DEFAULT_LOCATION = new GeoPoint(55.751244, 37.618423); // Москва
+
+    private List<Attraction> attractionsList = new ArrayList<>();
+    private NominatimApi nominatimApi;
+    public static class Attraction {
+        private String id;
+        private String name;
+        private String description;
+        private String category;
+        private double latitude;
+        private double longitude;
+        private float rating;
+
+        public Attraction() {}
+
+        public Attraction(String id, String name, String description, String category,
+                          double latitude, double longitude, float rating) {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            this.category = category;
+            this.latitude = latitude;
+            this.longitude = longitude;
+            this.rating = rating;
+        }
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
+        public double getLatitude() { return latitude; }
+        public void setLatitude(double latitude) { this.latitude = latitude; }
+        public double getLongitude() { return longitude; }
+        public void setLongitude(double longitude) { this.longitude = longitude; }
+        public float getRating() { return rating; }
+        public void setRating(float rating) { this.rating = rating; }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -67,15 +129,70 @@ public class RoutesFragment extends Fragment {
         mapController.setZoom(15.0);
         mapController.setCenter(DEFAULT_LOCATION);
 
-        // Firebase
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        // Инициализация Firebase
+        database = FirebaseDatabase.getInstance();
         attractionsRef = database.getReference("attractions");
 
         // Геолокация
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext());
         getLocationPermission();
 
+        // Инициализация Nominatim API через Retrofit
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://nominatim.openstreetmap.org/")  // или https://nominatim.heigit.org/
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        nominatimApi = retrofit.create(NominatimApi.class);
+
+        // Обработка поиска по адресу
+        EditText searchField = view.findViewById(R.id.addressSearchField);
+        searchField.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String query = s.toString();
+                if (!query.isEmpty()) {
+                    searchAddress(query);
+                }
+            }
+        });
+
         return view;
+    }
+
+    private void searchAddress(String query) {
+        Call<List<NominatimPlace>> call = nominatimApi.searchPlaces(
+                query, "json", 1, 1, 1, 0, "egor.edrenov@gmail.com"
+        );
+
+        call.enqueue(new Callback<List<NominatimPlace>>() {
+            @Override
+            public void onResponse(Call<List<NominatimPlace>> call, Response<List<NominatimPlace>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    NominatimPlace place = response.body().get(0);
+                    double lat = place.getLat();  // без парсинга
+                    double lon = place.getLon();
+                    GeoPoint point = new GeoPoint(lat, lon);
+                    mapController.setCenter(point);
+
+                    Marker marker = new Marker(mapView);
+                    marker.setPosition(point);
+                    marker.setTitle(place.getDisplayName());
+                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                    mapView.getOverlays().add(marker);
+                    mapView.invalidate();
+                } else {
+                    Toast.makeText(getContext(), "Место не найдено", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<NominatimPlace>> call, Throwable t) {
+                Toast.makeText(getContext(), "Ошибка поиска: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -181,42 +298,11 @@ public class RoutesFragment extends Fragment {
         }
     }
 
-    // Модель достопримечательности
-    public static class Attraction {
-        private String id;
-        private String name;
-        private String description;
-        private String category;
-        private double latitude;
-        private double longitude;
-        private float rating;
-
-        public Attraction() {}
-
-        public Attraction(String id, String name, String description, String category,
-                          double latitude, double longitude, float rating) {
-            this.id = id;
-            this.name = name;
-            this.description = description;
-            this.category = category;
-            this.latitude = latitude;
-            this.longitude = longitude;
-            this.rating = rating;
-        }
-
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getCategory() { return category; }
-        public void setCategory(String category) { this.category = category; }
-        public double getLatitude() { return latitude; }
-        public void setLatitude(double latitude) { this.latitude = latitude; }
-        public double getLongitude() { return longitude; }
-        public void setLongitude(double longitude) { this.longitude = longitude; }
-        public float getRating() { return rating; }
-        public void setRating(float rating) { this.rating = rating; }
-    }
+    // Модель достопримечательности оставьте без изменений
 }
+
+
+// Модель достопримечательности
+
+
+

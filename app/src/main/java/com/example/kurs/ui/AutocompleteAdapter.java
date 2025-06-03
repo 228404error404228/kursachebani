@@ -48,9 +48,7 @@ public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapte
                 5,
                 1,
                 0,
-                0,
-                "egor.edrenov@gmail.com.com", // укажи актуальный email
-                "5b3ce3597851110001cf624884b1ded505a84033aad7ea2edb718b95"       // замени на твой ключ
+                "egor.edrenov@gmail.com"
         );
 
         call.enqueue(new Callback<List<NominatimPlace>>() {
@@ -80,12 +78,13 @@ public class AutocompleteAdapter extends RecyclerView.Adapter<AutocompleteAdapte
     @Override
     public void onBindViewHolder(@NonNull AutocompleteAdapter.ViewHolder holder, int position) {
         NominatimPlace place = predictions.get(position);
-        holder.predictionText.setText(place.display_name);
+        holder.predictionText.setText(place.getDisplayName());
         holder.itemView.setOnClickListener(v -> {
-            GeoPoint geoPoint = new GeoPoint(Double.parseDouble(place.lat), Double.parseDouble(place.lon));
-            listener.onPlaceClick(place.display_name, geoPoint);
+            GeoPoint geoPoint = new GeoPoint(place.getLat(), place.getLon());
+            listener.onPlaceClick(place.getDisplayName(), geoPoint);
         });
     }
+
 
     @Override
     public int getItemCount() {
