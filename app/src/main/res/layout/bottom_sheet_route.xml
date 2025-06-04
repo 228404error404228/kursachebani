@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/attractionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Достопримечательность"
+        android:textStyle="bold"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/attractionDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Описание"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/btnBuildRoute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Проложить маршрут"
+        android:layout_marginTop="16dp" />
+</LinearLayout>

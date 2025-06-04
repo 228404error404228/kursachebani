@@ -13,13 +13,24 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.Toast;
 import com.example.kurs.R;
-
+import com.example.kurs.network.OpenRouteServiceApi;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import org.osmdroid.views.overlay.Polyline;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+
+import android.widget.TextView;
+import android.widget.Button;
+
+
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -42,24 +53,22 @@ import retrofit2.Call;
 import com.example.kurs.network.NominatimApi;
 import com.example.kurs.network.NominatimPlace;
 
-import org.osmdroid.util.GeoPoint;
+import android.graphics.Color;
 
-import java.util.ArrayList;
-import java.util.List;
 
-import java.util.List;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import android.text.TextWatcher;
 import android.text.Editable;
+import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.views.overlay.MapEventsOverlay;
+import okhttp3.ResponseBody;
+
+
 
 
 public class RoutesFragment extends Fragment {
@@ -72,7 +81,8 @@ public class RoutesFragment extends Fragment {
     private boolean locationPermissionGranted = false;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final GeoPoint DEFAULT_LOCATION = new GeoPoint(55.751244, 37.618423); // Москва
-
+    private OpenRouteServiceApi openRouteServiceApi;
+    private Polyline currentRoute;
     private List<Attraction> attractionsList = new ArrayList<>();
     private NominatimApi nominatimApi;
     public static class Attraction {
@@ -83,6 +93,10 @@ public class RoutesFragment extends Fragment {
         private double latitude;
         private double longitude;
         private float rating;
+
+
+
+
 
         public Attraction() {}
 
@@ -129,6 +143,52 @@ public class RoutesFragment extends Fragment {
         mapController.setZoom(15.0);
         mapController.setCenter(DEFAULT_LOCATION);
 
+        Retrofit orsRetrofit = new Retrofit.Builder()
+                .baseUrl("https://api.openrouteservice.org/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        openRouteServiceApi = orsRetrofit.create(OpenRouteServiceApi.class);
+
+
+        // 🎯 Интерактивность карты: добавляем слушатель нажатий
+        MapEventsOverlay mapEventsOverlay = new MapEventsOverlay(new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                Toast.makeText(getContext(), "Клик: " + p.getLatitude() + ", " + p.getLongitude(), Toast.LENGTH_SHORT).show();
+
+                Marker marker = new Marker(mapView);
+                marker.setPosition(p);
+                marker.setTitle("Выбранная точка");
+                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                marker.setRelatedObject(p); // ✅ сохраняем точку
+
+                marker.setOnMarkerClickListener((m, mv) -> {
+                    GeoPoint point = (GeoPoint) m.getRelatedObject(); // ✅ достаём
+                    showRouteDialog(point); // ✅ вызываем
+                    return true;
+                });
+
+                mapView.getOverlays().add(marker);
+                mapView.invalidate();
+
+
+
+
+                mapView.getOverlays().add(marker);
+                mapView.invalidate();
+
+                return true;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                return false;
+            }
+        });
+
+        mapView.getOverlays().add(mapEventsOverlay);
+
+
         // Инициализация Firebase
         database = FirebaseDatabase.getInstance();
         attractionsRef = database.getReference("attractions");
@@ -139,7 +199,7 @@ public class RoutesFragment extends Fragment {
 
         // Инициализация Nominatim API через Retrofit
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://nominatim.openstreetmap.org/")  // или https://nominatim.heigit.org/
+                .baseUrl("https://nominatim.openstreetmap.org/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         nominatimApi = retrofit.create(NominatimApi.class);
@@ -161,6 +221,86 @@ public class RoutesFragment extends Fragment {
 
         return view;
     }
+    private void buildRouteTo(GeoPoint destination) {
+        if (!locationPermissionGranted || fusedLocationProviderClient == null) return;
+
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(location -> {
+            if (location == null) return;
+
+            double[] start = {location.getLongitude(), location.getLatitude()};
+            double[] end = {destination.getLongitude(), destination.getLatitude()};
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("coordinates", Arrays.asList(start, end));
+
+            Call<ResponseBody> call = openRouteServiceApi.getRoute(body); // ✅ исправлено
+
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    try {
+                        if (response.isSuccessful() && response.body() != null) {
+                            String json = response.body().string();
+                            JSONObject obj = new JSONObject(json);
+                            JSONArray coordinates = obj.getJSONArray("features")
+                                    .getJSONObject(0)
+                                    .getJSONObject("geometry")
+                                    .getJSONArray("coordinates");
+
+                            List<GeoPoint> geoPoints = new ArrayList<>();
+                            for (int i = 0; i < coordinates.length(); i++) {
+                                JSONArray coord = coordinates.getJSONArray(i);
+                                double lon = coord.getDouble(0);
+                                double lat = coord.getDouble(1);
+                                geoPoints.add(new GeoPoint(lat, lon));
+                            }
+
+                            if (currentRoute != null) {
+                                mapView.getOverlays().remove(currentRoute);
+                            }
+
+                            currentRoute = new Polyline();
+                            currentRoute.setPoints(geoPoints);
+                            currentRoute.setColor(Color.BLUE);
+                            currentRoute.setWidth(8f);
+
+                            mapView.getOverlays().add(currentRoute);
+                            mapView.invalidate();
+                        } else {
+                            Toast.makeText(getContext(), "Ошибка маршрута", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Log.e("Route", "Ошибка парсинга маршрута: " + e.getMessage());
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    Toast.makeText(getContext(), "Ошибка сети: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private void showRouteDialog(GeoPoint destinationPoint) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View bottomSheetView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_route, null);
+        dialog.setContentView(bottomSheetView);
+
+        TextView routeTitle = bottomSheetView.findViewById(R.id.routeTitle);
+        Button buildRouteBtn = bottomSheetView.findViewById(R.id.buildRouteBtn);
+
+        routeTitle.setText("Маршрут до выбранной точки");
+
+        buildRouteBtn.setOnClickListener(v -> {
+            buildRouteTo(destinationPoint);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+
 
     private void searchAddress(String query) {
         Call<List<NominatimPlace>> call = nominatimApi.searchPlaces(
@@ -236,18 +376,25 @@ public class RoutesFragment extends Fragment {
     }
 
     private void addMarkerForAttraction(Attraction attraction) {
+        GeoPoint point = new GeoPoint(attraction.getLatitude(), attraction.getLongitude());
+
         Marker marker = new Marker(mapView);
-        marker.setPosition(new GeoPoint(attraction.getLatitude(), attraction.getLongitude()));
+        marker.setPosition(point);
         marker.setTitle(attraction.getName());
         marker.setSubDescription(attraction.getCategory());
         marker.setSnippet(attraction.getDescription());
+        marker.setRelatedObject(point); // ✅ сохраняем точку
+
         marker.setOnMarkerClickListener((m, mv) -> {
-            Toast.makeText(getContext(), attraction.getName() + ": " + attraction.getDescription(), Toast.LENGTH_LONG).show();
+            GeoPoint p = (GeoPoint) m.getRelatedObject(); // ✅ достаём точку
+            showRouteDialog(p); // ✅ вызываем диалог
             return true;
         });
 
         mapView.getOverlays().add(marker);
     }
+
+
 
     private void getLocationPermission() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -258,6 +405,27 @@ public class RoutesFragment extends Fragment {
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
+    }
+
+    private void showRouteBottomSheet(Attraction attraction) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View sheetView = LayoutInflater.from(getContext()).inflate(R.layout.bottom_sheet_route, null);
+        dialog.setContentView(sheetView);
+
+        TextView title = sheetView.findViewById(R.id.attractionTitle);
+        TextView description = sheetView.findViewById(R.id.attractionDescription);
+        Button btnBuildRoute = sheetView.findViewById(R.id.btnBuildRoute);
+
+        title.setText(attraction.getName());
+        description.setText(attraction.getDescription());
+
+        btnBuildRoute.setOnClickListener(v -> {
+            dialog.dismiss();
+            GeoPoint destination = new GeoPoint(attraction.getLatitude(), attraction.getLongitude());
+            buildRouteTo(destination);  // 👈 метод уже реализован
+        });
+
+        dialog.show();
     }
 
     @Override
