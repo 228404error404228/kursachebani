@@ -13,7 +13,12 @@
     <fragment
         android:id="@+id/nav_places"
         android:name="com.example.kurs.ui.PlacesFragment"
-        android:label="Достопримечательности" />
+        android:label="Достопримечательности">
+
+        <action
+            android:id="@+id/action_nav_places_to_nav_routes"
+            app:destination="@id/nav_routes" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_profile"
@@ -32,11 +37,7 @@
         android:label="Профиль"
         tools:layout="@layout/fragment_profile" />
 
-    <fragment
-        android:id="@+id/searchFragment"
-        android:name="com.example.kurs.ui.SearchFragment"
-        android:label="Поиск адреса"
-        tools:layout="@layout/fragment_search" />
+
 
     <action
         android:id="@+id/action_authFragment_to_profileFragment"

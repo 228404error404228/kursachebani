@@ -12,11 +12,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.kurs.R;
-import com.example.kurs.network.NominatimApi;
-import com.example.kurs.ui.AutocompleteAdapter;
+
 
 import org.osmdroid.util.GeoPoint;
+
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import com.example.kurs.R;
+import com.example.kurs.network.NominatimApi;
+
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -24,6 +28,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class AutocompleteAddressActivity extends AppCompatActivity {
 
     private AutocompleteAdapter adapter;
+    private MapView mapView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -67,5 +72,17 @@ public class AutocompleteAddressActivity extends AppCompatActivity {
         Toast.makeText(this, "Выбран адрес: " + address +
                         "\nКоординаты: " + geoPoint.getLatitude() + ", " + geoPoint.getLongitude(),
                 Toast.LENGTH_SHORT).show();
+
+        // Добавим маркер на карту
+        Marker marker = new Marker(mapView);
+        marker.setPosition(geoPoint);
+        marker.setTitle(address);
+        mapView.getOverlays().add(marker);
+
+        // Центрируем карту на выбранную точку
+        mapView.getController().setZoom(16.0);
+        mapView.getController().animateTo(geoPoint);
+        mapView.invalidate();
     }
+
 }

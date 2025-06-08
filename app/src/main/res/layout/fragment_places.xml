@@ -1,14 +1,58 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/fromField"
+        android:hint="Откуда (оставьте пустым для текущей локации)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/toField"
+        android:hint="Куда"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/buildRouteBtn"
+        android:text="Построить маршрут"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="Это экран достопримечательностей"
-        android:textSize="24sp" />
+        android:id="@+id/routeDistance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Дистанция: -"
+        android:layout_marginTop="8dp"
+        android:textSize="16sp" />
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/routeDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Время в пути: -"
+        android:layout_marginTop="4dp"
+        android:textSize="16sp" />
+
+
+    <TextView
+        android:id="@+id/textDistance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Дистанция:"
+        android:layout_marginTop="8dp"/>
+
+    <TextView
+        android:id="@+id/textDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Время в пути:"
+        android:layout_marginTop="4dp"/>
+
+
+</LinearLayout>
